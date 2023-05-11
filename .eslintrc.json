@@ -1,0 +1,61 @@
+{
+  "extends": [
+    "airbnb-base",
+    "plugin:prettier/recommended",
+    "plugin:@profi.co/recommended"
+  ],
+  "plugins": [
+    "@typescript-eslint",
+    "prettier",
+    "unused-imports"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "rules": {
+    "no-restricted-syntax": "off",
+    "arrow-parens": "off",
+    "class-methods-use-this": "off",
+    "function-paren-newline": "off",
+    "import/extensions": "off",
+    "import/no-unresolved": "off",
+    "import/no-extraneous-dependencies": [
+      "error",
+      {
+        "devDependencies": true
+      }
+    ],
+    "implicit-arrow-linebreak": "off",
+    "import/order": "off",
+    "import/prefer-default-export": "off",
+    "linebreak-style": "off",
+    "indent": "off",
+    "no-useless-constructor": "off",
+    "no-empty-function": "off",
+    "no-unused-vars": [
+      "error",
+      {
+        "vars": "all",
+        "args": "none",
+        "ignoreRestSiblings": true,
+        "varsIgnorePattern": "^[A-Z].*"
+      }
+    ],
+    "object-curly-newline": "off",
+    "prettier/prettier": "error",
+    "sort-imports": "off",
+    "no-await-in-loop": 0,
+    "no-continue": 0,
+    "@typescript-eslint/no-unused-vars": "off",
+    "unused-imports/no-unused-imports-ts": "error",
+    "require-await": "error",
+    "no-shadow": "off",
+    "@typescript-eslint/no-shadow": ["error"]
+  },
+  "overrides": [
+    {
+      "files": ["**/*spec.ts"],
+      "env": {
+        "jest": true
+      }
+    }
+  ]
+}

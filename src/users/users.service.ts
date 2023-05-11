@@ -1,16 +1,18 @@
+import * as bcrypt from 'bcryptjs';
+
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Model } from 'mongoose';
-import { CreateUserDto } from './dto/create-user.dto';
 import { InjectModel } from '@nestjs/mongoose';
+
+import { CreateUserDto } from './dto/create-user.dto';
 import { User } from './schemas/user.schema';
-import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UsersService {
   constructor(@InjectModel(User.name) private userModel: Model<User>) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const email = createUserDto.email;
+    const { email } = createUserDto;
     const existingUser = await this.userModel.findOne({ email }).exec();
 
     if (existingUser) {
@@ -23,15 +25,17 @@ export class UsersService {
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(createUserDto.password, salt);
 
-    createUserDto = {
+    const createHashedUser = {
       ...createUserDto,
       password: hash,
     };
-    const createdUser = await this.userModel.create(createUserDto);
+
+    const createdUser = await this.userModel.create(createHashedUser);
+
     return createdUser;
   }
 
-  async findAll(): Promise<User[]> {
+  findAll(): Promise<User[]> {
     return this.userModel.find().exec();
   }
 }
