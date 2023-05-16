@@ -1,9 +1,9 @@
 import * as bcrypt from 'bcryptjs';
-import * as jwt from 'jsonwebtoken';
 
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
+import { JwtService } from '@nestjs/jwt';
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from './schemas/user.schema';
@@ -12,10 +12,14 @@ import { ReadUserDto } from './dto/read-user.dto';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User.name) private userModel: Model<User>) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<User>,
+    private readonly jwtService: JwtService,
+  ) {}
 
-  public async create(createUserDto: CreateUserDto): Promise<ReadUserDto> {
+  public async create(createUserDto: CreateUserDto): Promise<void> {
     const { email } = createUserDto;
+
     const existingUser = await this.userModel.findOne({ email }).exec();
 
     if (existingUser) {
@@ -34,21 +38,6 @@ export class UsersService {
     };
 
     await this.userModel.create(createHashedUser);
-
-    const token = jwt.sign({ createHashedUser }, process.env.JWT_SIGNING_KEY, {
-      expiresIn: 600, // 10 minutes
-    });
-    const response = {
-      user: {
-        firstName: createHashedUser.firstName,
-        lastName: createHashedUser.lastName,
-        email: createHashedUser.email,
-        password: createHashedUser.password,
-      },
-      access_token: token,
-    };
-
-    return response;
   }
 
   public async login(loginUserDto: LoginUserDto): Promise<ReadUserDto> {
@@ -57,7 +46,7 @@ export class UsersService {
     const existingUser = await this.userModel.findOne({ email }).exec();
 
     if (!existingUser) {
-      throw new HttpException("This user doesn't exist!", HttpStatus.CONFLICT);
+      throw new HttpException("This user doesn't exist!", HttpStatus.NOT_FOUND);
     }
 
     const res = await bcrypt.compare(
@@ -65,52 +54,26 @@ export class UsersService {
       existingUser.password,
     );
 
-    if (res) {
-      const token = jwt.sign({ existingUser }, process.env.JWT_SIGNING_KEY, {
-        expiresIn: 600, // 10 minutes
-      });
-      const response = {
-        user: {
-          firstName: existingUser.firstName,
-          lastName: existingUser.lastName,
-          email: existingUser.email,
-          password: existingUser.password,
-        },
-        access_token: token,
-      };
-
-      return response;
+    if (!res) {
+      throw new HttpException('Wrong password', HttpStatus.UNAUTHORIZED);
     }
 
-    throw new HttpException('Wrong password', HttpStatus.FORBIDDEN);
+    const token = this.jwtService.sign({ existingUser });
+
+    const response = {
+      user: {
+        firstName: existingUser.firstName,
+        lastName: existingUser.lastName,
+        email: existingUser.email,
+        password: existingUser.password,
+      },
+      access_token: token,
+    };
+
+    return response;
   }
 
-  public async findAll(request: Request): Promise<User[]> {
-    const token = this.extractTokenFromHeader(request);
-
-    if (!token) {
-      throw new HttpException(
-        'You are not authenticated',
-        HttpStatus.FORBIDDEN,
-      );
-    }
-
-    try {
-      await jwt.verify(token, process.env.JWT_SIGNING_KEY);
-
-      return this.userModel.find().exec();
-    } catch (error) {
-      throw new HttpException(
-        'Authentication token is not valid',
-        HttpStatus.FORBIDDEN,
-      );
-    }
-  }
-
-  private extractTokenFromHeader(request: Request): string | undefined {
-    // @ts-ignore
-    const [type, token] = request.headers.authorization?.split(' ') ?? [];
-
-    return type === 'Bearer' ? token : undefined;
+  public findAll(): Promise<User[]> {
+    return this.userModel.find().exec();
   }
 }
