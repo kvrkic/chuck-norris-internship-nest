@@ -1,7 +1,7 @@
-import { User } from '../schemas/user.schema';
-
 export class ReadUserDto {
-  readonly user: User;
+  firstName: string;
 
-  readonly access_token: string;
+  lastName: string;
+
+  email: string;
 }

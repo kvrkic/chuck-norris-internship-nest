@@ -5,7 +5,7 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
 import { ReadUserDto } from './dto/read-user.dto';
-import { User } from './schemas/user.schema';
+import { ReadLoginDto } from './dto/read-login.dto';
 
 @Controller('users')
 export class UsersController {
@@ -17,13 +17,13 @@ export class UsersController {
   }
 
   @Post('/login')
-  public login(@Body() loginUserDto: LoginUserDto): Promise<ReadUserDto> {
+  public login(@Body() loginUserDto: LoginUserDto): Promise<ReadLoginDto> {
     return this.usersService.login(loginUserDto);
   }
 
   @Get()
   @UseGuards(JwtGuard)
-  public findAll(): Promise<User[]> {
+  public findAll(): Promise<ReadUserDto[]> {
     return this.usersService.findAll();
   }
 }
