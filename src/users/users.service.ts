@@ -1,4 +1,5 @@
 import * as bcrypt from 'bcryptjs';
+import * as nodemailer from 'nodemailer';
 
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Model } from 'mongoose';
@@ -10,6 +11,14 @@ import { User } from './schemas/user.schema';
 import { LoginUserDto } from './dto/login-user.dto';
 import { ReadUserDto } from './dto/read-user.dto';
 import { ReadLoginDto } from './dto/read-login.dto';
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_ACCOUNT_USERNAME,
+    pass: process.env.GMAIL_ACCOUNT_PASSWORD,
+  },
+});
 
 @Injectable()
 export class UsersService {
@@ -39,6 +48,31 @@ export class UsersService {
     };
 
     await this.userModel.create(createHashedUser);
+
+    const verificationToken = this.createTokenService.generateToken({
+      type: 'verification',
+      data: {
+        firstName: createHashedUser.firstName,
+        lastName: createHashedUser.lastName,
+        email,
+      },
+    });
+
+    const info = {
+      from: process.env.GMAIL_ACCOUNT_USERNAME,
+      to: email,
+      subject: 'Chuck Norris verification',
+      text: verificationToken,
+    };
+
+    try {
+      transporter.sendMail(info);
+    } catch (error) {
+      throw new HttpException(
+        'Error sending email',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   public async login(loginUserDto: LoginUserDto): Promise<ReadLoginDto> {
@@ -60,10 +94,12 @@ export class UsersService {
     }
 
     const token = this.createTokenService.generateToken({
-      _id: existingUser._id,
-      firstName: existingUser.firstName,
-      lastName: existingUser.lastName,
-      email: existingUser.email,
+      user: {
+        _id: existingUser._id,
+        firstName: existingUser.firstName,
+        lastName: existingUser.lastName,
+        email: existingUser.email,
+      },
     });
 
     const response = {

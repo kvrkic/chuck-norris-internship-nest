@@ -1,14 +1,6 @@
-import { User } from 'src/users/schemas/user.schema';
+import { ReadUserDto } from 'src/users/dto/read-user.dto';
 
-export interface CompleteUser extends User {
-  _id: string;
-  __v: string;
-}
-export interface TokenPayload {
-  _id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
+export interface TokenPayload extends UserPayload {
   iat: number;
   exp: number;
 }
@@ -17,4 +9,12 @@ export interface UserPayload {
   firstName: string;
   lastName: string;
   email: string;
+}
+export interface UserPayloadObject {
+  user: UserPayload;
+}
+
+export interface VerificationToken {
+  type: 'verification';
+  data: ReadUserDto;
 }
