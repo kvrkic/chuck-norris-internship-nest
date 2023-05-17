@@ -4,7 +4,8 @@ import * as nodemailer from 'nodemailer';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
-import { CreateTokenService } from 'src/auth/create-token.service';
+import { TokenService } from 'src/auth/token.service';
+import { Message } from 'src/auth/interfaces/token-payload.interface';
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from './schemas/user.schema';
@@ -24,7 +25,7 @@ const transporter = nodemailer.createTransport({
 export class UsersService {
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
-    private readonly createTokenService: CreateTokenService,
+    private readonly tokenService: TokenService,
   ) {}
 
   public async create(createUserDto: CreateUserDto): Promise<void> {
@@ -45,15 +46,19 @@ export class UsersService {
     const createHashedUser = {
       ...createUserDto,
       password: hash,
+      isVerified: false,
     };
 
     await this.userModel.create(createHashedUser);
 
-    const verificationToken = this.createTokenService.generateToken({
+    const newUser = await this.userModel.findOne({ email }).exec();
+
+    const verificationToken = this.tokenService.generateVerificationToken({
       type: 'verification',
-      data: {
-        firstName: createHashedUser.firstName,
-        lastName: createHashedUser.lastName,
+      user: {
+        _id: newUser._id,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
         email,
       },
     });
@@ -62,7 +67,7 @@ export class UsersService {
       from: process.env.GMAIL_ACCOUNT_USERNAME,
       to: email,
       subject: 'Chuck Norris verification',
-      text: verificationToken,
+      html: `<form method="post" action="http://localhost:3000/users/verify?token=${verificationToken}"><input type="submit" value="Verify mail" /></form>`,
     };
 
     try {
@@ -77,7 +82,6 @@ export class UsersService {
 
   public async login(loginUserDto: LoginUserDto): Promise<ReadLoginDto> {
     const { email } = loginUserDto;
-
     const existingUser = await this.userModel.findOne({ email }).exec();
 
     if (!existingUser) {
@@ -93,7 +97,14 @@ export class UsersService {
       throw new HttpException('Wrong password', HttpStatus.UNAUTHORIZED);
     }
 
-    const token = this.createTokenService.generateToken({
+    if (existingUser.isVerified === false) {
+      throw new HttpException(
+        'Please verify your email',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    const token = this.tokenService.generateAccessToken({
       user: {
         _id: existingUser._id,
         firstName: existingUser.firstName,
@@ -116,5 +127,35 @@ export class UsersService {
 
   public findAll(): Promise<ReadUserDto[]> {
     return this.userModel.find().exec();
+  }
+
+  public async verify(token: string): Promise<Message> {
+    try {
+      const payload = this.tokenService.verifyVerificationToken(token);
+
+      const existingUser = await this.userModel.findById(payload.user._id);
+
+      if (!existingUser) {
+        throw new HttpException(
+          "This user doesn't exist!",
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      await this.userModel.findByIdAndUpdate(
+        existingUser._id,
+        { isVerified: true },
+        { new: true },
+      );
+
+      return {
+        message: 'Your email has been verified. You can now sign in',
+      };
+    } catch (error) {
+      throw new HttpException(
+        'Error with verification',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }

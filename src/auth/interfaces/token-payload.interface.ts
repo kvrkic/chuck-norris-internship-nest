@@ -1,6 +1,6 @@
-import { ReadUserDto } from 'src/users/dto/read-user.dto';
-
-export interface TokenPayload extends UserPayload {
+export interface TokenPayload {
+  type?: 'verification';
+  user: UserPayload;
   iat: number;
   exp: number;
 }
@@ -13,8 +13,13 @@ export interface UserPayload {
 export interface UserPayloadObject {
   user: UserPayload;
 }
-
 export interface VerificationToken {
   type: 'verification';
-  data: ReadUserDto;
+  user: UserPayload;
+}
+export interface QueryToken {
+  token: string;
+}
+export interface Message {
+  message: string;
 }

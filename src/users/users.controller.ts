@@ -1,5 +1,9 @@
-import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Query } from '@nestjs/common';
 import { JwtGuard } from 'src/auth/guards/jwt-auth.guard';
+import {
+  Message,
+  QueryToken,
+} from 'src/auth/interfaces/token-payload.interface';
 
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -25,5 +29,10 @@ export class UsersController {
   @UseGuards(JwtGuard)
   public findAll(): Promise<ReadUserDto[]> {
     return this.usersService.findAll();
+  }
+
+  @Post('/verify')
+  public verify(@Query() query: QueryToken): Promise<Message> {
+    return this.usersService.verify(query.token);
   }
 }

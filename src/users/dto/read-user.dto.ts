@@ -1,7 +1,7 @@
 export class ReadUserDto {
-  firstName: string;
+  readonly firstName: string;
 
-  lastName: string;
+  readonly lastName: string;
 
-  email: string;
+  readonly email: string;
 }

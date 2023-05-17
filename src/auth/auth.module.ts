@@ -6,7 +6,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule } from '@nestjs/config';
 
 import { JwtStrategy } from './strategies/jwt.strategy';
-import { CreateTokenService } from './create-token.service';
+import { TokenService } from './token.service';
 
 @Module({
   imports: [
@@ -18,7 +18,7 @@ import { CreateTokenService } from './create-token.service';
       signOptions: { expiresIn: 600 }, // 10 minutes
     }),
   ],
-  providers: [JwtStrategy, CreateTokenService],
-  exports: [CreateTokenService],
+  providers: [JwtStrategy, TokenService],
+  exports: [TokenService],
 })
 export class AuthModule {}
