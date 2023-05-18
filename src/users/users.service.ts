@@ -5,12 +5,15 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { TokenService } from 'src/auth/token.service';
-import { Message } from 'src/auth/interfaces/token-payload.interface';
+import {
+  JokeResponse,
+  Message,
+} from 'src/auth/interfaces/token-payload.interface';
+import { HttpService } from '@nestjs/axios';
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from './schemas/user.schema';
 import { LoginUserDto } from './dto/login-user.dto';
-import { ReadUserDto } from './dto/read-user.dto';
 import { ReadLoginDto } from './dto/read-login.dto';
 
 const transporter = nodemailer.createTransport({
@@ -26,6 +29,7 @@ export class UsersService {
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
     private readonly tokenService: TokenService,
+    private readonly httpService: HttpService,
   ) {}
 
   public async create(createUserDto: CreateUserDto): Promise<void> {
@@ -143,8 +147,29 @@ export class UsersService {
     return response;
   }
 
-  public findAll(): Promise<ReadUserDto[]> {
-    return this.userModel.find().exec();
+  public async dashboard(user: User): Promise<Message> {
+    try {
+      const response = await this.getJoke();
+
+      const info = {
+        from: process.env.GMAIL_ACCOUNT_USERNAME,
+        to: user.email,
+        subject: 'Chuck Norris joke',
+        text: response.data.value,
+      };
+
+      transporter.sendMail(info);
+
+      return {
+        message: 'Email sent successfully',
+      };
+    } catch (error) {
+      throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  private getJoke(): Promise<JokeResponse> {
+    return this.httpService.axiosRef.get(process.env.JOKE_URL);
   }
 
   public async verify(token: string): Promise<Message> {
