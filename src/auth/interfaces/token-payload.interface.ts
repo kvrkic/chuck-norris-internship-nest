@@ -14,10 +14,6 @@ export interface TokenPayload {
   exp: number;
 }
 
-export interface Message {
-  message: string;
-}
-
 export interface JokeResponse extends AxiosResponse {
   data: JokeData;
 }

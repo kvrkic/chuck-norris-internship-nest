@@ -5,10 +5,7 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { TokenService } from 'src/auth/token.service';
-import {
-  JokeResponse,
-  Message,
-} from 'src/auth/interfaces/token-payload.interface';
+import { JokeResponse } from 'src/auth/interfaces/token-payload.interface';
 import { HttpService } from '@nestjs/axios';
 
 import { RegistrationRequestDto } from './dto/registration-request.dto';
@@ -141,7 +138,7 @@ export class UsersService {
     return response;
   }
 
-  public async dashboard(user: User): Promise<Message> {
+  public async dashboard(user: User): Promise<any> {
     try {
       const response = await this.getJoke();
 
@@ -166,33 +163,35 @@ export class UsersService {
     return this.httpService.axiosRef.get(process.env.JOKE_URL);
   }
 
-  public async verify(token: string): Promise<Message> {
-    try {
-      const user = this.tokenService.verifyVerificationToken(token);
+  public async verify(verificationToken: string): Promise<ReadLoginDto> {
+    const user = this.tokenService.verifyVerificationToken(verificationToken);
 
-      const existingUser = await this.userModel.findById(user._id);
+    const existingUser = await this.userModel.findById(user._id);
 
-      if (!existingUser) {
-        throw new HttpException(
-          "This user doesn't exist!",
-          HttpStatus.NOT_FOUND,
-        );
-      }
-
-      await this.userModel.findByIdAndUpdate(
-        existingUser._id,
-        { isVerified: true },
-        { new: true },
-      );
-
-      return {
-        message: 'Your email has been verified. You can now sign in',
-      };
-    } catch (error) {
-      throw new HttpException(
-        'Error with verification',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+    if (!existingUser) {
+      throw new HttpException("This user doesn't exist!", HttpStatus.NOT_FOUND);
     }
+
+    existingUser.isVerified = true;
+
+    await existingUser.save();
+
+    const accesToken = this.tokenService.generateAccessToken({
+      _id: existingUser._id,
+      firstName: existingUser.firstName,
+      lastName: existingUser.lastName,
+      email: existingUser.email,
+    });
+
+    const response = {
+      user: {
+        firstName: existingUser.firstName,
+        lastName: existingUser.lastName,
+        email: existingUser.email,
+      },
+      access_token: accesToken,
+    };
+
+    return response;
   }
 }

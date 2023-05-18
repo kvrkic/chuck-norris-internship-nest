@@ -8,7 +8,6 @@ import {
   Request,
 } from '@nestjs/common';
 import { JwtGuard } from 'src/auth/guards/jwt-auth.guard';
-import { Message } from 'src/auth/interfaces/token-payload.interface';
 
 import { UsersService } from './users.service';
 import { RegistrationRequestDto } from './dto/registration-request.dto';
@@ -35,12 +34,14 @@ export class UsersController {
 
   @Get()
   @UseGuards(JwtGuard)
-  public dashboard(@Request() req: AuthorizedRequest): Promise<Message> {
+  public dashboard(@Request() req: AuthorizedRequest): Promise<any> {
     return this.usersService.dashboard(req.user);
   }
 
   @Post('/verify')
-  public verify(@Query() query: VerificationQueryParamsDto): Promise<Message> {
+  public verify(
+    @Query() query: VerificationQueryParamsDto,
+  ): Promise<ReadLoginDto> {
     return this.usersService.verify(query.token);
   }
 }
