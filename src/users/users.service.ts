@@ -67,7 +67,25 @@ export class UsersService {
       from: process.env.GMAIL_ACCOUNT_USERNAME,
       to: email,
       subject: 'Chuck Norris verification',
-      html: `<form method="post" action="http://localhost:3000/users/verify?token=${verificationToken}"><input type="submit" value="Verify mail" /></form>`,
+      html: `
+      <form method="post" action="http://localhost:3000/users/verify?token=${verificationToken}">
+        <h2>Chuck Norris Jokes</h2>
+        <p>
+          Hi ${newUser.firstName},
+          We just need to verify your email address before you can access the sign in.
+
+          Verify your email address by clicking the button below.
+        </p>
+        <input style="background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;"
+          type="submit" value="Verify" />
+      </form>`,
     };
 
     try {
