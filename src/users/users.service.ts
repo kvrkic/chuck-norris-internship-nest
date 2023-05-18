@@ -1,32 +1,25 @@
 import * as bcrypt from 'bcryptjs';
-import * as nodemailer from 'nodemailer';
 
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { TokenService } from 'src/auth/token.service';
-import { JokeResponse } from 'src/auth/interfaces/token-payload.interface';
-import { HttpService } from '@nestjs/axios';
+import { EmailsService } from 'src/emails/emails.service';
 
 import { RegistrationRequestDto } from './dto/registration-request.dto';
 import { User } from './schemas/user.schema';
 import { LoginRequestDto } from './dto/login-request.dto';
 import { ReadLoginDto } from './dto/read-login.dto';
-
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_ACCOUNT_USERNAME,
-    pass: process.env.GMAIL_ACCOUNT_PASSWORD,
-  },
-});
+import { JokesService } from './jokes.service';
 
 @Injectable()
 export class UsersService {
+  // eslint-disable-next-line max-params
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
     private readonly tokenService: TokenService,
-    private readonly httpService: HttpService,
+    private readonly jokesService: JokesService,
+    private readonly emailsService: EmailsService,
   ) {}
 
   public async create(createValues: RegistrationRequestDto): Promise<void> {
@@ -60,33 +53,8 @@ export class UsersService {
       email,
     });
 
-    const info = {
-      from: process.env.GMAIL_ACCOUNT_USERNAME,
-      to: email,
-      subject: 'Chuck Norris verification',
-      html: `
-      <form method="post" action="http://localhost:3000/users/verify?token=${verificationToken}">
-        <h2>Chuck Norris Jokes</h2>
-        <p>
-          Hi ${newUser.firstName},
-          We just need to verify your email address before you can access the sign in.
-
-          Verify your email address by clicking the button below.
-        </p>
-        <input style="background-color: #4CAF50;
-            border: none;
-            color: white;
-            padding: 15px 32px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;"
-          type="submit" value="Verify" />
-      </form>`,
-    };
-
     try {
-      transporter.sendMail(info);
+      await this.emailsService.sendRegistrationMail(newUser, verificationToken);
     } catch (error) {
       throw new HttpException(
         'Error sending email',
@@ -138,29 +106,12 @@ export class UsersService {
     return response;
   }
 
-  public async dashboard(user: User): Promise<any> {
-    try {
-      const response = await this.getJoke();
+  public async dashboard(user: User): Promise<string> {
+    const response = await this.jokesService.getJoke();
 
-      const info = {
-        from: process.env.GMAIL_ACCOUNT_USERNAME,
-        to: user.email,
-        subject: 'Chuck Norris joke',
-        text: response.data.value,
-      };
+    await this.emailsService.sendJokeMail(user, response);
 
-      transporter.sendMail(info);
-
-      return {
-        message: 'Email sent successfully',
-      };
-    } catch (error) {
-      throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-  }
-
-  private getJoke(): Promise<JokeResponse> {
-    return this.httpService.axiosRef.get(process.env.JOKE_URL);
+    return response;
   }
 
   public async verify(verificationToken: string): Promise<ReadLoginDto> {

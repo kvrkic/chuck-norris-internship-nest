@@ -1,5 +1,3 @@
-import { AxiosResponse } from 'axios';
-
 import { TokenType } from '../enums/token-type.enum';
 
 export interface UserPayload {
@@ -16,12 +14,8 @@ export interface TokenPayload {
   exp: number;
 }
 
-export interface JokeResponse extends AxiosResponse {
-  data: JokeData;
-}
-
 export interface JokeData {
-  categories: Array<string>;
+  categories: string[];
   created_at: string;
   icon_url: string;
   id: string;
