@@ -1,38 +1,27 @@
 import { AxiosResponse } from 'axios';
-import { Request } from 'express';
-import { User } from 'src/users/schemas/user.schema';
 
-export interface TokenPayload {
-  type?: 'verification';
-  user: UserPayload;
-  iat: number;
-  exp: number;
-}
 export interface UserPayload {
   _id: object;
   firstName: string;
   lastName: string;
   email: string;
 }
-export interface UserPayloadObject {
+
+export interface TokenPayload {
+  type: string;
   user: UserPayload;
+  iat: number;
+  exp: number;
 }
-export interface VerificationToken {
-  type: 'verification';
-  user: UserPayload;
-}
-export interface QueryToken {
-  token: string;
-}
+
 export interface Message {
   message: string;
 }
-export interface IRequest extends Request {
-  user: User;
-}
+
 export interface JokeResponse extends AxiosResponse {
   data: JokeData;
 }
+
 export interface JokeData {
   categories: Array<string>;
   created_at: string;

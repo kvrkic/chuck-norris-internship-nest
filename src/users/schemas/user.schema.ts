@@ -17,7 +17,7 @@ export class User {
   @Prop({ required: true })
   public password: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, default: false })
   public isVerified: boolean;
 }
 

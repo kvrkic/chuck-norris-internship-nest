@@ -11,9 +11,9 @@ import {
 } from 'src/auth/interfaces/token-payload.interface';
 import { HttpService } from '@nestjs/axios';
 
-import { CreateUserDto } from './dto/create-user.dto';
+import { RegistrationRequestDto } from './dto/registration-request.dto';
 import { User } from './schemas/user.schema';
-import { LoginUserDto } from './dto/login-user.dto';
+import { LoginRequestDto } from './dto/login-request.dto';
 import { ReadLoginDto } from './dto/read-login.dto';
 
 const transporter = nodemailer.createTransport({
@@ -32,8 +32,8 @@ export class UsersService {
     private readonly httpService: HttpService,
   ) {}
 
-  public async create(createUserDto: CreateUserDto): Promise<void> {
-    const { email } = createUserDto;
+  public async create(createValues: RegistrationRequestDto): Promise<void> {
+    const { email } = createValues;
 
     const existingUser = await this.userModel.findOne({ email }).exec();
 
@@ -45,12 +45,11 @@ export class UsersService {
     }
 
     const salt = await bcrypt.genSalt(10);
-    const hash = await bcrypt.hash(createUserDto.password, salt);
+    const hash = await bcrypt.hash(createValues.password, salt);
 
     const createHashedUser = {
-      ...createUserDto,
+      ...createValues,
       password: hash,
-      isVerified: false,
     };
 
     await this.userModel.create(createHashedUser);
@@ -58,13 +57,10 @@ export class UsersService {
     const newUser = await this.userModel.findOne({ email }).exec();
 
     const verificationToken = this.tokenService.generateVerificationToken({
-      type: 'verification',
-      user: {
-        _id: newUser._id,
-        firstName: newUser.firstName,
-        lastName: newUser.lastName,
-        email,
-      },
+      _id: newUser._id,
+      firstName: newUser.firstName,
+      lastName: newUser.lastName,
+      email,
     });
 
     const info = {
@@ -102,8 +98,8 @@ export class UsersService {
     }
   }
 
-  public async login(loginUserDto: LoginUserDto): Promise<ReadLoginDto> {
-    const { email } = loginUserDto;
+  public async login(loginRequestDto: LoginRequestDto): Promise<ReadLoginDto> {
+    const { email } = loginRequestDto;
     const existingUser = await this.userModel.findOne({ email }).exec();
 
     if (!existingUser) {
@@ -111,7 +107,7 @@ export class UsersService {
     }
 
     const res = await bcrypt.compare(
-      loginUserDto.password,
+      loginRequestDto.password,
       existingUser.password,
     );
 
@@ -127,12 +123,10 @@ export class UsersService {
     }
 
     const token = this.tokenService.generateAccessToken({
-      user: {
-        _id: existingUser._id,
-        firstName: existingUser.firstName,
-        lastName: existingUser.lastName,
-        email: existingUser.email,
-      },
+      _id: existingUser._id,
+      firstName: existingUser.firstName,
+      lastName: existingUser.lastName,
+      email,
     });
 
     const response = {
@@ -174,9 +168,9 @@ export class UsersService {
 
   public async verify(token: string): Promise<Message> {
     try {
-      const payload = this.tokenService.verifyVerificationToken(token);
+      const user = this.tokenService.verifyVerificationToken(token);
 
-      const existingUser = await this.userModel.findById(payload.user._id);
+      const existingUser = await this.userModel.findById(user._id);
 
       if (!existingUser) {
         throw new HttpException(
