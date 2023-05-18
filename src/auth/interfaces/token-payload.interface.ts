@@ -1,5 +1,7 @@
 import { AxiosResponse } from 'axios';
 
+import { TokenType } from '../enums/token-type.enum';
+
 export interface UserPayload {
   _id: object;
   firstName: string;
@@ -8,7 +10,7 @@ export interface UserPayload {
 }
 
 export interface TokenPayload {
-  type: string;
+  type: TokenType;
   user: UserPayload;
   iat: number;
   exp: number;

@@ -1,0 +1,4 @@
+export enum TokenType {
+  VERIFICATION = 'VERIFICATION',
+  ACCESS_TOKEN = 'ACCES_TOKEN',
+}

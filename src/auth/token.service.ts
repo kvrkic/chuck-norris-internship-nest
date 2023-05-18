@@ -1,7 +1,11 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
-import { UserPayload } from './interfaces/token-payload.interface';
+import {
+  TokenPayload,
+  UserPayload,
+} from './interfaces/token-payload.interface';
+import { TokenType } from './enums/token-type.enum';
 
 @Injectable()
 export class TokenService {
@@ -9,25 +13,26 @@ export class TokenService {
 
   public generateAccessToken(user: UserPayload): string {
     return this.jwtService.sign({
-      type: 'access_token',
+      type: TokenType.ACCESS_TOKEN,
       user,
     });
   }
 
   public generateVerificationToken(user: UserPayload): string {
     return this.jwtService.sign({
-      type: 'verification',
+      type: TokenType.VERIFICATION,
       user,
     });
   }
 
   public verifyVerificationToken(verificationToken: string): UserPayload {
-    const payload = this.jwtService.verify(verificationToken);
+    const { type, user } =
+      this.jwtService.verify<TokenPayload>(verificationToken);
 
-    if (payload.type !== 'verification') {
+    if (type !== TokenType.VERIFICATION) {
       throw new HttpException('Token is not correct', HttpStatus.UNAUTHORIZED);
     }
 
-    return payload.user;
+    return user;
   }
 }

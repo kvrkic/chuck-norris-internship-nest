@@ -25,6 +25,13 @@ export class UsersController {
     return this.usersService.create(values);
   }
 
+  @Post('/verify')
+  public verify(
+    @Query() query: VerificationQueryParamsDto,
+  ): Promise<ReadLoginDto> {
+    return this.usersService.verify(query.token);
+  }
+
   @Post('/login')
   public login(
     @Body() loginRequestDto: LoginRequestDto,
@@ -36,12 +43,5 @@ export class UsersController {
   @UseGuards(JwtGuard)
   public dashboard(@Request() req: AuthorizedRequest): Promise<any> {
     return this.usersService.dashboard(req.user);
-  }
-
-  @Post('/verify')
-  public verify(
-    @Query() query: VerificationQueryParamsDto,
-  ): Promise<ReadLoginDto> {
-    return this.usersService.verify(query.token);
   }
 }
