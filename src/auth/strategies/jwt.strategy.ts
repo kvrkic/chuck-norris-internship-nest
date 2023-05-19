@@ -6,6 +6,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 
 import { TokenPayload } from '../interfaces/token-payload.interface';
+import { ErrorMessage } from '../enums/errors.enum';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -21,7 +22,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const user = await this.userModel.findById(payload.user._id).exec();
 
     if (!user) {
-      throw new HttpException("This user doesn't exist!", HttpStatus.NOT_FOUND);
+      throw new HttpException(
+        ErrorMessage.USER_DOESNT_EXIST,
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     return user;

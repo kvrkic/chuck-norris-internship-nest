@@ -6,6 +6,7 @@ import {
   UserPayload,
 } from './interfaces/token-payload.interface';
 import { TokenType } from './enums/token-type.enum';
+import { ErrorMessage } from './enums/errors.enum';
 
 @Injectable()
 export class TokenService {
@@ -30,7 +31,10 @@ export class TokenService {
       this.jwtService.verify<TokenPayload>(verificationToken);
 
     if (type !== TokenType.VERIFICATION) {
-      throw new HttpException('Token is not correct', HttpStatus.UNAUTHORIZED);
+      throw new HttpException(
+        ErrorMessage.INCORRECT_TOKEN,
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
     return user;

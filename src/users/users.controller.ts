@@ -41,7 +41,7 @@ export class UsersController {
 
   @Get()
   @UseGuards(JwtGuard)
-  public dashboard(@Request() req: AuthorizedRequest): Promise<any> {
+  public dashboard(@Request() req: AuthorizedRequest): Promise<string> {
     return this.usersService.dashboard(req.user);
   }
 }

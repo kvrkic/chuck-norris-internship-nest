@@ -5,15 +5,17 @@ import { User } from 'src/users/schemas/user.schema';
 
 @Injectable()
 export class EmailsService {
-  constructor() {}
+  private readonly transporter: nodemailer.Transporter;
 
-  transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.GMAIL_ACCOUNT_USERNAME,
-      pass: process.env.GMAIL_ACCOUNT_PASSWORD,
-    },
-  });
+  constructor() {
+    this.transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.GMAIL_ACCOUNT_USERNAME,
+        pass: process.env.GMAIL_ACCOUNT_PASSWORD,
+      },
+    });
+  }
 
   public async sendRegistrationMail(user: User, token: string): Promise<void> {
     const info = {

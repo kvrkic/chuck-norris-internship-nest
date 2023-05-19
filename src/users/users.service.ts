@@ -5,6 +5,7 @@ import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { TokenService } from 'src/auth/token.service';
 import { EmailsService } from 'src/emails/emails.service';
+import { ErrorMessage } from 'src/auth/enums/errors.enum';
 
 import { RegistrationRequestDto } from './dto/registration-request.dto';
 import { User } from './schemas/user.schema';
@@ -29,7 +30,7 @@ export class UsersService {
 
     if (existingUser) {
       throw new HttpException(
-        'This email is already in use',
+        ErrorMessage.EMAIL_ALREADY_USED,
         HttpStatus.CONFLICT,
       );
     }
@@ -57,7 +58,7 @@ export class UsersService {
       await this.emailsService.sendRegistrationMail(newUser, verificationToken);
     } catch (error) {
       throw new HttpException(
-        'Error sending email',
+        ErrorMessage.EMAIL_ERROR,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -68,7 +69,10 @@ export class UsersService {
     const existingUser = await this.userModel.findOne({ email }).exec();
 
     if (!existingUser) {
-      throw new HttpException("This user doesn't exist!", HttpStatus.NOT_FOUND);
+      throw new HttpException(
+        ErrorMessage.USER_DOESNT_EXIST,
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     const res = await bcrypt.compare(
@@ -77,12 +81,15 @@ export class UsersService {
     );
 
     if (!res) {
-      throw new HttpException('Wrong password', HttpStatus.UNAUTHORIZED);
+      throw new HttpException(
+        ErrorMessage.INCORRECT_PASSWORD,
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
     if (existingUser.isVerified === false) {
       throw new HttpException(
-        'Please verify your email',
+        ErrorMessage.VERIFY_EMAIL,
         HttpStatus.UNAUTHORIZED,
       );
     }
@@ -120,7 +127,10 @@ export class UsersService {
     const existingUser = await this.userModel.findById(user._id);
 
     if (!existingUser) {
-      throw new HttpException("This user doesn't exist!", HttpStatus.NOT_FOUND);
+      throw new HttpException(
+        ErrorMessage.USER_DOESNT_EXIST,
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     existingUser.isVerified = true;
