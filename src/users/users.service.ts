@@ -98,8 +98,8 @@ export class UsersService {
     return this.loginResponse(existingUser, accessToken);
   }
 
-  public async dashboard(user: User): Promise<string> {
-    const response = await this.jokesService.getJoke();
+  public async getJoke(user: User): Promise<string> {
+    const response = await this.jokesService.fetchJoke();
 
     await this.emailsService.sendJokeMail(user, response);
 

@@ -42,8 +42,8 @@ export class UsersController {
 
   @Get()
   @UseGuards(JwtGuard)
-  public dashboard(@Request() req: AuthorizedRequest): Promise<string> {
-    return this.usersService.dashboard(req.user);
+  public getJoke(@Request() req: AuthorizedRequest): Promise<string> {
+    return this.usersService.getJoke(req.user);
   }
 
   @Post('resend')

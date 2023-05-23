@@ -7,7 +7,7 @@ import { JokeData } from './interfaces/joke-data.interface';
 export class JokesService {
   constructor(private readonly httpService: HttpService) {}
 
-  public async getJoke(): Promise<string> {
+  public async fetchJoke(): Promise<string> {
     const { data } = await this.httpService.axiosRef.get<JokeData>(
       process.env.JOKE_URL,
     );
