@@ -22,7 +22,7 @@ export class EmailsService {
       from: process.env.GMAIL_ACCOUNT_USERNAME,
       to: user.email,
       subject: 'Chuck Norris verification',
-      html: this.composeRegistrationMail(token, user.firstName),
+      html: this.composeRegistrationMail(token, user.firstName, user.email),
     };
 
     await this.transporter.sendMail(info);
@@ -39,7 +39,11 @@ export class EmailsService {
     await this.transporter.sendMail(info);
   }
 
-  private composeRegistrationMail(token: string, firstName: string): string {
+  private composeRegistrationMail(
+    token: string,
+    firstName: string,
+    email: string,
+  ): string {
     return `
         <form method="post" action="http://localhost:3000/users/verify?token=${token}">
             <h2>Chuck Norris Jokes</h2>
@@ -58,6 +62,13 @@ export class EmailsService {
                 display: inline-block;
                 font-size: 16px;"
             type="submit" value="Verify" />
+        </form>
+        <form method="post" action="http://localhost:3000/users/resend?email=${email}">
+          <p>
+            <small>
+              If the link is no longer working, click <button type="submit">here</button>
+            </small>
+          </p>
         </form>`;
   }
 }

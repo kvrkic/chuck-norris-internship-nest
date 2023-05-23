@@ -47,7 +47,7 @@ export class UsersController {
   }
 
   @Post('resend')
-  public resend(@Body() email: EmailResendRequestDto): Promise<string> {
-    return this.usersService.resend(email);
+  public resend(@Query() query: EmailResendRequestDto): Promise<string> {
+    return this.usersService.resend(query);
   }
 }
