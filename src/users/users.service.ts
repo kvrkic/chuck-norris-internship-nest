@@ -6,12 +6,14 @@ import { InjectModel } from '@nestjs/mongoose';
 import { TokenService } from 'src/auth/token.service';
 import { EmailsService } from 'src/emails/emails.service';
 import { ErrorMessage } from 'src/auth/enums/errors.enum';
+import { UserPayload } from 'src/auth/interfaces/token-payload.interface';
 
 import { RegistrationRequestDto } from './dto/registration-request.dto';
 import { User } from './schemas/user.schema';
 import { LoginRequestDto } from './dto/login-request.dto';
 import { ReadLoginDto } from './dto/read-login.dto';
 import { JokesService } from './jokes.service';
+import { EmailResendRequestDto } from './dto/email-resend-request.dto';
 
 @Injectable()
 export class UsersService {
@@ -43,16 +45,11 @@ export class UsersService {
       password: hash,
     };
 
-    await this.userModel.create(createHashedUser);
+    const newUser = await this.userModel.create(createHashedUser);
 
-    const newUser = await this.userModel.findOne({ email }).exec();
-
-    const verificationToken = this.tokenService.generateVerificationToken({
-      _id: newUser._id,
-      firstName: newUser.firstName,
-      lastName: newUser.lastName,
-      email,
-    });
+    const verificationToken = this.tokenService.generateVerificationToken(
+      this.generateTokenPayload(newUser),
+    );
 
     try {
       await this.emailsService.sendRegistrationMail(newUser, verificationToken);
@@ -94,23 +91,11 @@ export class UsersService {
       );
     }
 
-    const token = this.tokenService.generateAccessToken({
-      _id: existingUser._id,
-      firstName: existingUser.firstName,
-      lastName: existingUser.lastName,
-      email,
-    });
+    const accessToken = this.tokenService.generateAccessToken(
+      this.generateTokenPayload(existingUser),
+    );
 
-    const response = {
-      user: {
-        firstName: existingUser.firstName,
-        lastName: existingUser.lastName,
-        email: existingUser.email,
-      },
-      access_token: token,
-    };
-
-    return response;
+    return this.loginResponse(existingUser, accessToken);
   }
 
   public async dashboard(user: User): Promise<string> {
@@ -137,22 +122,63 @@ export class UsersService {
 
     await existingUser.save();
 
-    const accesToken = this.tokenService.generateAccessToken({
-      _id: existingUser._id,
-      firstName: existingUser.firstName,
-      lastName: existingUser.lastName,
-      email: existingUser.email,
-    });
+    const accessToken = this.tokenService.generateAccessToken(
+      this.generateTokenPayload(existingUser),
+    );
 
-    const response = {
-      user: {
-        firstName: existingUser.firstName,
-        lastName: existingUser.lastName,
-        email: existingUser.email,
-      },
-      access_token: accesToken,
+    return this.loginResponse(existingUser, accessToken);
+  }
+
+  public async resend(email: EmailResendRequestDto): Promise<string> {
+    const existingUser = await this.userModel.findOne(email).exec();
+
+    if (!existingUser) {
+      throw new HttpException(
+        ErrorMessage.USER_DOESNT_EXIST,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const verificationToken = this.tokenService.generateVerificationToken(
+      this.generateTokenPayload(existingUser),
+    );
+
+    if (existingUser.isVerified === false) {
+      try {
+        await this.emailsService.sendRegistrationMail(
+          existingUser,
+          verificationToken,
+        );
+      } catch (error) {
+        throw new HttpException(
+          ErrorMessage.EMAIL_ERROR,
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+
+      return 'Verification email has been resent';
+    }
+
+    return 'Email is already verified';
+  }
+
+  private generateTokenPayload(user: User & { _id: Object }): UserPayload {
+    return {
+      _id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
     };
+  }
 
-    return response;
+  private loginResponse(_user: User, accessToken: string): ReadLoginDto {
+    return {
+      user: {
+        firstName: _user.firstName,
+        lastName: _user.lastName,
+        email: _user.email,
+      },
+      access_token: accessToken,
+    };
   }
 }

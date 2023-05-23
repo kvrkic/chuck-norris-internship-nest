@@ -15,6 +15,7 @@ import { LoginRequestDto } from './dto/login-request.dto';
 import { ReadLoginDto } from './dto/read-login.dto';
 import { VerificationQueryParamsDto } from './dto/verification-query-params.dto';
 import { AuthorizedRequest } from './interfaces/authorized-request.interface';
+import { EmailResendRequestDto } from './dto/email-resend-request.dto';
 
 @Controller('users')
 export class UsersController {
@@ -43,5 +44,10 @@ export class UsersController {
   @UseGuards(JwtGuard)
   public dashboard(@Request() req: AuthorizedRequest): Promise<string> {
     return this.usersService.dashboard(req.user);
+  }
+
+  @Post('resend')
+  public resend(@Body() email: EmailResendRequestDto): Promise<string> {
+    return this.usersService.resend(email);
   }
 }
