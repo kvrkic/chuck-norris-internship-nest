@@ -7,6 +7,7 @@ import { Model } from 'mongoose';
 
 import { TokenPayload } from '../interfaces/token-payload.interface';
 import { ErrorMessage } from '../enums/errors.enum';
+import { TokenType } from '../enums/token-type.enum';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -19,6 +20,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   private async validate(payload: TokenPayload): Promise<User> {
+    const { type } = payload;
+
+    if (type !== TokenType.ACCESS_TOKEN) {
+      throw new HttpException(
+        ErrorMessage.INCORRECT_TOKEN,
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
     const user = await this.userModel.findById(payload.user._id).exec();
 
     if (!user) {
