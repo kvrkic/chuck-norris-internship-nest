@@ -28,12 +28,12 @@ export class EmailsService {
     await this.transporter.sendMail(info);
   }
 
-  public async sendJokeMail(user: User, response: string): Promise<void> {
+  public async sendJokeMail(user: User, joke: string): Promise<void> {
     const info = {
       from: process.env.GMAIL_ACCOUNT_USERNAME,
       to: user.email,
       subject: 'Chuck Norris joke',
-      text: response,
+      text: joke,
     };
 
     await this.transporter.sendMail(info);

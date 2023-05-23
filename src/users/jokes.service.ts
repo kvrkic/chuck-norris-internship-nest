@@ -1,6 +1,7 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
-import { JokeData } from 'src/auth/interfaces/token-payload.interface';
+
+import { JokeData } from './interfaces/joke-data.interface';
 
 @Injectable()
 export class JokesService {
