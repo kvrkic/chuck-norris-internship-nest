@@ -3,11 +3,11 @@ import * as bcrypt from 'bcryptjs';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
-import { TokenService } from 'src/auth/token.service';
-import { EmailsService } from 'src/emails/emails.service';
-import { ErrorMessage } from 'src/auth/enums/errors.enum';
-import { UserPayload } from 'src/auth/interfaces/token-payload.interface';
 
+import { UserPayload } from '../auth/interfaces/token-payload.interface';
+import { ErrorMessage } from '../auth/enums/errors.enum';
+import { EmailsService } from '../emails/emails.service';
+import { TokenService } from '../auth/token.service';
 import { RegistrationRequestDto } from './dto/registration-request.dto';
 import { User } from './schemas/user.schema';
 import { LoginRequestDto } from './dto/login-request.dto';
