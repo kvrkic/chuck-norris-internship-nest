@@ -11,20 +11,41 @@ import { EmailsService } from '../emails/emails.service';
 import { ErrorMessage } from '../auth/enums/errors.enum';
 
 describe('UsersService', () => {
+  const registrationRequest: RegistrationRequestDto = {
+    firstName: 'test',
+    lastName: 'test',
+    email: 'test@example.com',
+    password: 'password',
+  };
+
+  const createdUser: User & { _id: string } = {
+    ...registrationRequest,
+    _id: '1234567',
+    password: 'hashedPassword',
+    isVerified: false,
+  };
+
+  const tokenPayload = {
+    _id: createdUser._id,
+    firstName: createdUser.firstName,
+    lastName: createdUser.lastName,
+    email: createdUser.email,
+  };
+
   const mockTokenService = {
-    generateAccessToken: jest.fn(() => {}),
-    generateVerificationToken: jest.fn(() => {}),
-    verifyVerificationToken: jest.fn(() => {}),
-  } as unknown as TokenService;
+    generateAccessToken: jest.fn(),
+    generateVerificationToken: jest.fn(),
+    verifyVerificationToken: jest.fn(),
+  };
 
   const mockJokesService = {
-    fetchJoke: jest.fn(() => {}),
-  } as unknown as JokesService;
+    fetchJoke: jest.fn(),
+  };
 
   const mockEmailsService = {
-    sendRegistrationMail: jest.fn(() => {}),
-    sendJokeMail: jest.fn(() => {}),
-  } as unknown as EmailsService;
+    sendRegistrationMail: jest.fn(),
+    sendJokeMail: jest.fn(),
+  };
 
   const findOneExec = jest.fn();
   const mockUserModel = {
@@ -33,60 +54,40 @@ describe('UsersService', () => {
         exec: findOneExec,
       };
     }),
-    create: jest.fn(() => {}),
-    findById: jest.fn(() => {}),
-  } as unknown as Model<User>;
+    create: jest.fn(() => createdUser),
+    findById: jest.fn(),
+  };
 
   const mockUsersService = new UsersService(
-    mockUserModel,
-    mockTokenService,
-    mockJokesService,
-    mockEmailsService,
+    mockUserModel as unknown as Model<User>,
+    mockTokenService as unknown as TokenService,
+    mockJokesService as unknown as JokesService,
+    mockEmailsService as unknown as EmailsService,
   );
-
-  const registrationRequest: RegistrationRequestDto = {
-    firstName: 'test',
-    lastName: 'test',
-    email: 'test@example.com',
-    password: 'password',
-  };
-  const hashedRegistrationRequest: RegistrationRequestDto = {
-    firstName: 'test',
-    lastName: 'test',
-    email: 'test@example.com',
-    password: 'hashedPassword',
-  };
-
-  const user: User & { _id: string } = {
-    _id: '1234567',
-    firstName: 'test',
-    lastName: 'test',
-    email: registrationRequest.email,
-    password: 'hashedPassword',
-    isVerified: false,
-  };
-  const tokenPayload = {
-    _id: user._id,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    email: user.email,
-  };
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
   describe('/register', () => {
-    it('should create new user', async () => {
-      jest
-        // @ts-ignore
-        .spyOn(mockUsersService, 'generateTokenPayload')
-        // @ts-ignore
-        .mockReturnValue(null);
+    it('should create new user with hashed password', async () => {
+      // @ts-ignore
+      jest.spyOn(bcrypt, 'genSalt').mockResolvedValue('salt');
+      // @ts-ignore
+      jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashedPassword');
 
       await mockUsersService.create(registrationRequest);
 
+      expect(bcrypt.genSalt).toHaveBeenCalledWith(10);
+      expect(bcrypt.hash).toHaveBeenCalledWith(
+        registrationRequest.password,
+        'salt',
+      );
       expect(mockUserModel.create).toBeCalledTimes(1);
+      expect(mockUserModel.create).toBeCalledWith({
+        ...registrationRequest,
+        password: 'hashedPassword',
+      });
     });
 
     it('should fail with custom error if email is already used', async () => {
@@ -97,34 +98,12 @@ describe('UsersService', () => {
       await expect(
         mockUsersService.create(registrationRequest),
       ).rejects.toThrow(ErrorMessage.EMAIL_ALREADY_USED);
+
       expect(mockUserModel.findOne).toBeCalledTimes(1);
       expect(mockUserModel.findOne).toBeCalledWith({ email });
     });
 
-    it('should hash the password using bcrypt', async () => {
-      // @ts-ignore
-      jest.spyOn(bcrypt, 'genSalt').mockResolvedValue('salt');
-      // @ts-ignore
-      jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashedPassword');
-
-      await mockUsersService.create(registrationRequest);
-      expect(mockUserModel.create).toBeCalledWith(hashedRegistrationRequest);
-      expect(bcrypt.genSalt).toHaveBeenCalledWith(10);
-      expect(bcrypt.hash).toHaveBeenCalledWith(
-        registrationRequest.password,
-        'salt',
-      );
-    });
-
     it('should generate a verification token', async () => {
-      // @ts-ignore
-      jest.spyOn(mockUserModel, 'create').mockResolvedValueOnce(user);
-      jest
-        // @ts-ignore
-        .spyOn(mockUsersService, 'generateTokenPayload')
-        // @ts-ignore
-        .mockReturnValueOnce(tokenPayload);
-
       await mockUsersService.create(registrationRequest);
 
       expect(mockTokenService.generateVerificationToken).toBeCalledTimes(1);
@@ -134,30 +113,27 @@ describe('UsersService', () => {
     });
 
     it('should call the sendRegistrationMail function', async () => {
-      // @ts-ignore
-      jest.spyOn(mockUserModel, 'create').mockResolvedValueOnce(tokenPayload);
       jest
         .spyOn(mockTokenService, 'generateVerificationToken')
-        // @ts-ignore
         .mockReturnValueOnce('token');
 
       await mockUsersService.create(registrationRequest);
 
       expect(mockEmailsService.sendRegistrationMail).toBeCalledTimes(1);
       expect(mockEmailsService.sendRegistrationMail).toBeCalledWith(
-        tokenPayload,
+        registrationRequest.firstName,
+        registrationRequest.email,
         'token',
       );
     });
 
     it('should fail with custom error if there is an error sending email', async () => {
-      jest
-        .spyOn(mockEmailsService, 'sendRegistrationMail')
-        // @ts-ignore
-        .mockRejectedValueOnce();
+      mockEmailsService.sendRegistrationMail.mockRejectedValueOnce(null);
+
       await expect(
         mockUsersService.create(registrationRequest),
       ).rejects.toThrow(ErrorMessage.EMAIL_ERROR);
+
       expect(mockEmailsService.sendRegistrationMail).toBeCalledTimes(1);
     });
   });

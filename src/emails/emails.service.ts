@@ -17,12 +17,16 @@ export class EmailsService {
     });
   }
 
-  public async sendRegistrationMail(user: User, token: string): Promise<void> {
+  public async sendRegistrationMail(
+    firstName: string,
+    email: string,
+    token: string,
+  ): Promise<void> {
     const info = {
       from: process.env.GMAIL_ACCOUNT_USERNAME,
-      to: user.email,
+      to: email,
       subject: 'Chuck Norris verification',
-      html: this.composeRegistrationMail(token, user.firstName, user.email),
+      html: this.composeRegistrationMail(token, firstName, email),
     };
 
     await this.transporter.sendMail(info);

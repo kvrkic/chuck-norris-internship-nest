@@ -52,7 +52,11 @@ export class UsersService {
     );
 
     try {
-      await this.emailsService.sendRegistrationMail(newUser, verificationToken);
+      await this.emailsService.sendRegistrationMail(
+        newUser.firstName,
+        newUser.email,
+        verificationToken,
+      );
     } catch (error) {
       throw new HttpException(
         ErrorMessage.EMAIL_ERROR,
@@ -146,7 +150,8 @@ export class UsersService {
     if (existingUser.isVerified === false) {
       try {
         await this.emailsService.sendRegistrationMail(
-          existingUser,
+          existingUser.firstName,
+          existingUser.email,
           verificationToken,
         );
       } catch (error) {
