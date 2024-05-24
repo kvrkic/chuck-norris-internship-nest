@@ -13,7 +13,6 @@ import { User } from './schemas/user.schema';
 import { LoginRequestDto } from './dto/login-request.dto';
 import { ReadLoginDto } from './dto/read-login.dto';
 import { JokesService } from './jokes.service';
-import { EmailResendRequestDto } from './dto/email-resend-request.dto';
 
 @Injectable()
 export class UsersService {
@@ -133,8 +132,8 @@ export class UsersService {
     return this.loginResponse(existingUser, accessToken);
   }
 
-  public async resend(email: EmailResendRequestDto): Promise<string> {
-    const existingUser = await this.userModel.findOne(email).exec();
+  public async resend(email: string): Promise<string> {
+    const existingUser = await this.userModel.findOne({ email }).exec();
 
     if (!existingUser) {
       throw new HttpException(

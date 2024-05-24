@@ -43,10 +43,10 @@ export class UsersController {
     return this.usersService.login(loginRequestDto);
   }
 
+  @UseGuards(JwtGuard)
   @Get()
   @ApiBearerAuth()
   @ApiOkResponse({ type: String })
-  @UseGuards(JwtGuard)
   public getJoke(@Request() req: AuthorizedRequest): Promise<string> {
     return this.usersService.getJoke(req.user);
   }
@@ -54,6 +54,6 @@ export class UsersController {
   @Post('resend')
   @ApiOkResponse({ type: String })
   public resend(@Query() query: EmailResendRequestDto): Promise<string> {
-    return this.usersService.resend(query);
+    return this.usersService.resend(query.email);
   }
 }
